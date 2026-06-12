@@ -1,10 +1,19 @@
 <?php
 
+/**
+ * Class TiketVelvet
+ * Turunan dari class abstrak Tiket
+ * Merepresentasikan studio Velvet
+ */
 class TiketVelvet extends Tiket
 {
+    // Properti tambahan khusus studio Velvet
     protected $bantalSelimutPack;
     protected $layananButler;
 
+    /**
+     * Constructor TiketVelvet
+     */
     public function __construct(
         $idTiket,
         $namaFilm,
@@ -14,6 +23,7 @@ class TiketVelvet extends Tiket
         $bantalSelimutPack,
         $layananButler
     ) {
+        // Memanggil constructor parent
         parent::__construct(
             $idTiket,
             $namaFilm,
@@ -26,18 +36,26 @@ class TiketVelvet extends Tiket
         $this->layananButler = $layananButler;
     }
 
+    /**
+     * Method overriding
+     * Menghitung total harga tiket Velvet
+     * Rumus:
+     * (jumlah_kursi × harga_dasar) × 1.5
+     */
     public function hitungTotalHarga()
     {
-        $biayaTambahan = 50000;
-
-        return ($this->hargaDasarTiket + $biayaTambahan) * $this->jumlahKursi;
+        return ($this->jumlahKursi * $this->hargaDasarTiket) * 1.50;
     }
 
+    /**
+     * Menampilkan informasi fasilitas studio Velvet
+     */
     public function tampilkanInfoFasilitas()
     {
-        return "Studio Velvet | Bantal & Selimut: {$this->bantalSelimutPack} | Butler: {$this->layananButler}";
+        return "Paket Bantal & Selimut: {$this->bantalSelimutPack}, Layanan Butler: {$this->layananButler}";
     }
 
+    // Getter
     public function getBantalSelimutPack()
     {
         return $this->bantalSelimutPack;
