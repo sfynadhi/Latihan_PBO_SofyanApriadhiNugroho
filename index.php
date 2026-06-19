@@ -22,8 +22,21 @@ try {
         'Velvet' => []
     ];
     
+    // Daftar film unik untuk tampilan Beranda (Home)
+    $filmUnik = [];
+    
     foreach ($rows as $row) {
         $jenisStudio = $row['jenis_studio'];
+        $namaFilm = $row['nama_film'];
+        
+        // Simpan daftar film unik untuk beranda katalog
+        if (!isset($filmUnik[$namaFilm])) {
+            $filmUnik[$namaFilm] = [
+                'judul' => $namaFilm,
+                'jadwal' => date('d M Y', strtotime($row['jadwal_tayang'])),
+                'tipe' => $jenisStudio
+            ];
+        }
         
         if ($jenisStudio === 'Regular') {
             $daftarTiket['Regular'][] = new TiketRegular(
@@ -56,128 +69,355 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar Pesanan Tiket Bioskop</title>
+    <title>DAKOTA - Dashboard Cinema</title>
+    <!-- Google Fonts & FontAwesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f6f9;
+        :root {
+            --bg-dark: #0b0f17;
+            --bg-navbar: #06090f;
+            --bg-card: #121824;
+            --accent-gold: #ffb800;
+            --text-white: #ffffff;
+            --text-grey: #7b869a;
+            --border-color: #1e2736;
+            
+            --regular: #3b82f6;
+            --imax: #f97316;
+            --velvet: #a855f7;
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
-            padding: 20px;
-            color: #333;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-white);
+            padding-bottom: 50px;
         }
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 40px;
+
+        /* --- NAVIGATION BAR DENGAN MENU DI TENGAH --- */
+        .navbar {
+            background-color: var(--bg-navbar);
+            border-bottom: 2px solid var(--border-color);
+            padding: 15px 40px;
+            display: flex;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-        .studio-section {
-            background: #fff;
-            padding: 20px;
-            margin-bottom: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .studio-title {
+
+        .brand-logo {
             font-size: 24px;
-            margin-top: 0;
-            padding-bottom: 10px;
-            border-bottom: 3px solid;
+            font-weight: 700;
+            color: var(--text-white);
+            letter-spacing: 1px;
+            flex: 1; /* Mengisi ruang kiri agar mendorong menu ke tengah */
+            display: flex;
+            align-items: center;
         }
-        /* Pewarnaan Kategori Studio */
-        .title-Regular { color: #2980b9; border-color: #2980b9; }
-        .title-IMAX { color: #e67e22; border-color: #e67e22; }
-        .title-Velvet { color: #8e44ad; border-color: #8e44ad; }
-        
+
+        .brand-logo span {
+            color: var(--accent-gold);
+        }
+
+        /* Nav menu digeser tepat ke tengah */
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 25px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Spacer kanan agar menu tetap berada di tengah secara simetris */
+        .navbar-spacer {
+            flex: 1;
+        }
+
+        .menu-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-white);
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 8px 12px;
+            transition: color 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .menu-btn:hover {
+            color: var(--accent-gold);
+        }
+
+        /* Active Menu State */
+        .menu-btn.active {
+            color: var(--accent-gold);
+            border-bottom: 2px solid var(--accent-gold);
+        }
+
+        /* --- CONTENT MAIN CONTAINER --- */
+        .container {
+            max-width: 1300px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-left: 10px;
+            border-left: 4px solid var(--accent-gold);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .content-section {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* --- HOME GRID LAYOUT --- */
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+        }
+
+        .movie-card-text {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 25px 15px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 210px;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .movie-card-text:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-gold);
+        }
+
+        .movie-tag {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            color: #fff;
+        }
+        .tag-Regular { background-color: var(--regular); }
+        .tag-IMAX { background-color: var(--imax); }
+        .tag-Velvet { background-color: var(--velvet); }
+
+        .movie-icon-box {
+            font-size: 36px;
+            color: var(--text-grey);
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .movie-title-text {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-white);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .movie-date-text {
+            font-size: 12px;
+            color: var(--text-grey);
+        }
+
+        /* --- DESIGN TABEL DATA MANIFEST --- */
+        .table-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
         }
-        th, td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
+
         th {
-            background-color: #f8f9fa;
-            color: #333;
-            font-weight: 600;
-        }
-        tr:hover {
-            background-color: #f9f9f9;
-        }
-        .badge-fasilitas {
-            background-color: #eaeded;
-            color: #2c3e50;
-            padding: 5px 10px;
-            border-radius: 4px;
+            background: rgba(6, 9, 15, 0.6);
+            padding: 16px 20px;
+            color: var(--text-grey);
             font-size: 13px;
-            display: inline-block;
+            font-weight: 700;
+            text-transform: uppercase;
         }
-        .harga-total {
-            font-weight: bold;
-            color: #27ae60;
+
+        td {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
         }
-        .empty-row {
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+        .badge-facility {
+            background: rgba(255,255,255,0.05);
+            color: #cbd5e1;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .price-tag {
+            font-weight: 700;
+            color: #10b981;
+        }
+
+        .empty-state {
+            padding: 40px;
             text-align: center;
-            color: #7f8c8d;
-            font-style: italic;
+            color: var(--text-grey);
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Daftar Pesanan Tiket Bioskop (Dinamis)</h1>
-
-    <?php foreach ($daftarTiket as $kategori => $listTiket): ?>
-        <div class="studio-section">
-            <h2 class="studio-title title-<?= $kategori ?>">Studio <?= $kategori ?></h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 5%">ID</th>
-                        <th style="width: 25%">Nama Film</th>
-                        <th style="width: 18%">Jadwal Tayang</th>
-                        <th style="width: 10%">Jumlah Kursi</th>
-                        <th style="width: 27%">Spesifikasi Fasilitas Unik</th>
-                        <th style="width: 15%">Total Harga</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (empty($listTiket)): ?>
-                        <tr>
-                            <td colspan="6" class="empty-row">Tidak ada pesanan tiket untuk Studio <?= $kategori ?>.</td>
-                        </tr>
-                    <?php else: ?>
-                        <?php foreach ($listTiket as $tiket): ?>
-                            <tr>
-                                <td><?= htmlspecialchars($tiket->getIdTiket()) ?></td>
-                                <td><strong><?= htmlspecialchars($tiket->getNamaFilm()) ?></strong></td>
-                                <td><?= htmlspecialchars(date('d M Y - H:i', strtotime($tiket->getJadwalTayang()))) ?> WIB</td>
-                                <td><?= htmlspecialchars($tiket->getJumlahKursi()) ?></td>
-                                <td>
-                                    <span class="badge-fasilitas">
-                                        <?= htmlspecialchars($tiket->tampilkanInfoFasilitas()) ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="harga-total">
-                                        Rp <?= number_format($tiket->hitungTotalHarga(), 2, ',', '.') ?>
-                                    </span>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+    <!-- NAVBAR PREMIUM DAKOTA (MENU DI TENGAH) -->
+    <header class="navbar">
+        <div class="brand-logo">
+            DAKO<span>TA</span>
         </div>
-    <?php endforeach; ?>
-</div>
+        
+        <ul class="nav-menu">
+            <li><button class="menu-btn active" data-target="home"><i class="fa-solid fa-house"></i> Home</button></li>
+            <li><button class="menu-btn" data-target="Regular"><i class="fa-solid fa-ticket"></i> Movies</button></li>
+            <li><button class="menu-btn" data-target="IMAX"><i class="fa-solid fa-wand-magic-sparkles"></i> IMAX</button></li>
+            <li><button class="menu-btn" data-target="Velvet"><i class="fa-solid fa-couch"></i> Velvet</button></li>
+        </ul>
 
+        <!-- Elemen penyeimbang di kanan -->
+        <div class="navbar-spacer"></div>
+    </header>
+
+    <div class="container">
+
+        <!-- ================= BERANDA HOME SECTION ================= -->
+        <div class="content-section active" id="section-home">
+            <h2 class="section-title">Sedang Tayang</h2>
+            <div class="movie-grid">
+                <?php foreach($filmUnik as $film): ?>
+                    <div class="movie-card-text">
+                        <span class="movie-tag tag-<?= $film['tipe'] ?>"><?= $film['tipe'] ?></span>
+                        <div class="movie-icon-box">
+                            <i class="fa-solid fa-clapperboard"></i>
+                        </div>
+                        <div>
+                            <div class="movie-title-text"><?= htmlspecialchars($film['judul']) ?></div>
+                            <div class="movie-date-text"><?= $film['jadwal'] ?></div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+
+        <!-- ================= SECTION TABLES (REGULAR, IMAX, VELVET) ================= -->
+        <?php foreach ($daftarTiket as $kategori => $listTiket): ?>
+            <div class="content-section" id="section-<?= $kategori ?>">
+                <h2 class="section-title">Manifes Penjualan Studio <?= $kategori ?></h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 8%">ID</th>
+                                <th style="width: 25%">Nama Film</th>
+                                <th style="width: 20%">Jadwal Tayang</th>
+                                <th style="width: 12%">Jumlah Kursi</th>
+                                <th style="width: 23%">Spesifikasi Fasilitas Unik</th>
+                                <th style="width: 12%">Total Harga</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if (empty($listTiket)): ?>
+                                <tr>
+                                    <td colspan="6" class="empty-state">
+                                        Tidak ada pesanan tiket untuk Studio <?= $kategori ?>.
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <?php foreach ($listTiket as $tiket): ?>
+                                    <tr>
+                                        <td style="color: var(--text-grey); font-weight: bold;">#<?= htmlspecialchars($tiket->getIdTiket()) ?></td>
+                                        <td><strong style="color: #fff;"><?= htmlspecialchars($tiket->getNamaFilm()) ?></strong></td>
+                                        <td><?= htmlspecialchars(date('d M Y - H:i', strtotime($tiket->getJadwalTayang()))) ?> WIB</td>
+                                        <td><?= htmlspecialchars($tiket->getJumlahKursi()) ?> Pax</td>
+                                        <td>
+                                            <span class="badge-facility">
+                                                <?= htmlspecialchars($tiket->tampilkanInfoFasilitas()) ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="price-tag">
+                                                Rp <?= number_format($tiket->hitungTotalHarga(), 0, ',', '.') ?>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        <?php endforeach; ?>
+
+    </div>
+
+    <!-- SCRIPT INTERAKSI NAVIGASI TAB -->
+    <script>
+        document.querySelectorAll('.menu-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                
+                const target = this.getAttribute('data-target');
+                
+                document.querySelectorAll('.content-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                
+                document.getElementById('section-' + target).classList.add('active');
+            });
+        });
+    </script>
 </body>
 </html>
